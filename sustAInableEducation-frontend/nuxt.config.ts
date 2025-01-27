@@ -44,6 +44,13 @@ export default defineNuxtConfig({
       hostUrl: process.env.HOST_URL
     }
   },
+  app: {
+    head: {
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+      ]
+    }
+  },
   routeRules: {
     '/ecospaces/*': { ssr: false }
   },

@@ -224,6 +224,8 @@ const runtimeConfig = useRuntimeConfig();
 const confirmDialog = useConfirm();
 const toast = useToast();
 
+const route = useRoute();
+
 
 const { execute, data: spaces } = await useFetch<EcoSpace[]>(`${runtimeConfig.public.apiUrl}/spaces`,
     {
@@ -233,7 +235,7 @@ const { execute, data: spaces } = await useFetch<EcoSpace[]>(`${runtimeConfig.pu
         headers: useRequestHeaders(['cookie']),
         onResponse: (response) => {
             if (response.response.status === 401) {
-                navigateTo('/login');
+                navigateTo('/login?redirect=' + route.fullPath);
             }
         }
     }

@@ -32,7 +32,7 @@
                     <Button type="submit" label="Login" />
                 </Form>
                 <p class="mt-4">oder</p>
-                <NuxtLink to="/register" class="text-white mx-4 text-xl">
+                <NuxtLink :to="redirection ? '/register?redirect=' + redirection : '/register'" class="text-white mx-4 text-xl">
                     <Button variant="link" label="Registrieren" text />
                 </NuxtLink>
             </div>
@@ -45,7 +45,11 @@ import type { Login, LoginError } from '~/types/login'
 
 const runtimeConfig = useRuntimeConfig();
 
+const route = useRoute();
+
 const toast = useToast();
+
+const redirection = route.query.redirect as string | undefined;
 
 const formRefs = {
     email: ref<string>(''),
@@ -101,7 +105,11 @@ async function login() {
             credentials: 'include',
             onResponse: (response) => {
                 if (response.response.status === 200) {
-                    navigateTo('/');
+                    if(redirection) {
+                        navigateTo(redirection);
+                    } else {
+                        navigateTo('/');
+                    }
                 } else {
                     toast.add({ severity: 'error', summary: `Fehler: ${response.response.status}`, detail: 'Bei der Anmeldung ist ein Fehler aufgetreten.' });
                 }

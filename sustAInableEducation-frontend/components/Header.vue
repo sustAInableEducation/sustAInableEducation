@@ -41,12 +41,8 @@ async function logout() {
         method: 'POST',
         credentials: 'include',
         onResponse: (response) => {
-            if (response.response.status === 200) {
-                toast.add({
-                    severity: 'success',
-                    summary: 'Logout erfolgreich',
-                    life: 3000
-                });
+            if (response.response.ok) {
+                navigateTo('/login?redirect=' + route.fullPath)
             }
         }
     })

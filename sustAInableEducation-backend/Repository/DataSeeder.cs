@@ -26,21 +26,6 @@ namespace sustAInableEducation_backend.Repository
 
         public async Task Seed()
         {
-            if (await _roleManager.FindByNameAsync("Admin") == null)
-            {
-                await _roleManager.CreateAsync(new IdentityRole("Admin"));
-            }
-            if (!await _context.Users.AnyAsync(u => u.UserName == _config["AdminEmail"]))
-            {
-                var user = new ApplicationUser
-                {
-                    UserName = _config["AdminEmail"],
-                    Email = _config["AdminEmail"]
-                };
-                await _userManager.CreateAsync(user, _config["AdminPassword"]!);
-                await _userManager.AddToRoleAsync(user, "Admin");
-            }
-
             if (!await _context.Setting.AnyAsync())
             {
                 _context.Setting.Add(new Setting
@@ -54,6 +39,21 @@ namespace sustAInableEducation_backend.Repository
                     Value = "true"
                 });
                 await _context.SaveChangesAsync();
+            }
+
+            if (await _roleManager.FindByNameAsync("Admin") == null)
+            {
+                await _roleManager.CreateAsync(new IdentityRole("Admin"));
+            }
+            if (!await _context.Users.AnyAsync(u => u.UserName == _config["AdminEmail"]))
+            {
+                var user = new ApplicationUser
+                {
+                    UserName = _config["AdminEmail"],
+                    Email = _config["AdminEmail"]
+                };
+                await _userManager.CreateAsync(user, _config["AdminPassword"]!);
+                await _userManager.AddToRoleAsync(user, "Admin");
             }
         }
     }

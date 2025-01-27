@@ -1,32 +1,63 @@
 services:
-    backend:
-        build: ./sustAInableEducation-backend
-        ports:
-            - 8080:8080
-        environment:
-            - Db__Host=database
-            - Db__User=sa
-            - Db__Password=Schueler123!
-            - DeepInfra__Url=https://api.deepinfra.com
-            - DeepInfra__ApiKey=123
-            - FrontendHost=http://localhost:3000
-        restart: always
-        depends_on:
-            - database
+  frontend:
+    build: ./hundert-morgen-wald-frontend
+    ports:
+      - 3000:3000
+    environment:
+      - VIRTUAL_HOST=app.sustainable-edu.at
+      - LETSENCRYPT_HOST=app.sustainable-edu.at
+      - VIRTUAL_PORT=3000
+    restart: always
 
-    database:
-        image: mcr.microsoft.com/mssql/server:2022-latest
-        user: root
-        ports:
-            - 1433:1433
-        volumes:
-            - mssql-data:/var/opt/mssql/data
-            - mssql-log:/var/opt/mssql/log
-            - mssql-secrets:/var/opt/mssql/secrets
-        environment:
-            - ACCEPT_EULA=Y
-            - SA_PASSWORD=Schueler123!
-        restart: always
+  backend:
+    build: ./sustAInableEducation-backend
+    ports:
+      - 8080:8080
+    environment:
+      - VIRTUAL_HOST=app.sustainable-edu.at
+      - LETSENCRYPT_HOST=app.sustainable-edu.at
+      - VIRTUAL_PORT=8080
+      - VIRTUAL_PATH=/api
+      - Db__Host=database
+      - Db__User=sa
+      - Db__Password=Schueler123!
+      - DeepInfra__Url=https://api.deepinfra.com
+      - DeepInfra__ApiKey=123
+      - FrontendHost=http://localhost:3000
+    restart: always
+    depends_on:
+      - database
+
+  nginx:
+    image: nginx:latest
+    networks:
+      - web
+    ports:
+      - 1337:80
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    environment:
+      - VIRTUAL_HOST=app.sustainable-edu.at
+      - LETSENCRYPT_HOST=app.sustainable-edu.at
+      - VIRTUAL_PORT=80
+    restart: always
+
+  database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    user: root
+    ports:
+      - 1433:1433
+    volumes:
+      - mssql-data:/var/opt/mssql/data
+      - mssql-log:/var/opt/mssql/log
+      - mssql-secrets:/var/opt/mssql/secrets
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=Schueler123!
+    restart: always
 
 volumes:
   mssql-data:

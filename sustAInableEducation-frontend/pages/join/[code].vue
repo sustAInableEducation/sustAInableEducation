@@ -22,17 +22,12 @@ if (import.meta.client) {
     },
     onResponse: (response) => {
       if (response.response.ok) {
-        console.error("OK")
-        console.log(response.response._data)
         router.push(`/ecospaces/${response.response._data.id}`)
       } else if (response.response.status === 404) {
-        console.error("404")
         router.push('/')
       } else if (response.response.status === 401) {
-        console.error("401")
-        router.push('/login')
+        router.push('/login?redirect=' + route.fullPath)
       } else {
-        console.error("else")
       }
     }
   })

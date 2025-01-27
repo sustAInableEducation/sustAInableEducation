@@ -42,7 +42,7 @@
                     <Button type="submit" label="Registrieren" />
                 </Form>
                 <p class="mt-4">oder</p>
-                <NuxtLink to="/login" class="text-white mx-4 text-xl">
+                <NuxtLink :to="redirection ? '/login?redirect=' + redirection : 'login'" class="text-white mx-4 text-xl">
                     <Button variant="link" label="Anmelden" text />
                 </NuxtLink>
             </div>
@@ -54,6 +54,10 @@
 import type { Register, RegisterError } from '~/types/register'
 
 const runtimeConfig = useRuntimeConfig();
+
+const route = useRoute();
+
+const redirection = route.query.redirect as string | undefined;
 
 const toast = useToast();
 
@@ -142,10 +146,13 @@ async function register() {
             "password": formRefs.password.value
         }),
         onResponse: (response) => {
-            if (response.response.status === 200) {
-                navigateTo('/login');
+            if (response.response.ok) {
+                if (redirection) {
+                    navigateTo('/login?redirect=' + redirection);
+                } else {
+                    navigateTo('/login');
+                }
             }
-            navigateTo('/login');
         },
         onRequestError: (error) => {
             toast.add({ severity: 'error', summary: `Fehler: ${error.response?.status}`, detail: 'Bei der Registrierung ist ein Fehler aufgetreten.' });
