@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using SkiaSharp;
 using sustAInableEducation_backend.Models;
 
@@ -310,6 +311,91 @@ namespace sustAInableEducation_backend.Repository
 
 
 
+/// <summary>
+/// Kacper Bohaczyk
+/// </summary>
+/// <param name="userName"></param> --------------------------------------------------------------------------------------------------------
+/// <returns></returns>
+    public async Task<string> GenerateProfileImage(String userName){
+            ArgumentNullException.ThrowIfNull(_client);
+            ArgumentNullException.ThrowIfNull(userName);
+               
+            
+
+            String imagePrompt = $"Generate an image related to sustainability that matches the term '{userName}'. The Style of the image should match the ";
+            read volumes 
+
+
+            HttpRequestMessage requestImage = new(HttpMethod.Post, "/v1/inference/black-forest-labs/FLUX-1-dev")
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new
+                {
+                    prompt = imagePrompt,
+                    width = 128,
+                    height = 128
+                }), Encoding.UTF8, "application/json")
+            };
+            HttpResponseMessage responseImage = null!;
+            string responseStringImage;
+
+            try
+            {
+                responseImage = await _client.SendAsync(requestImage);
+                responseImage.EnsureSuccessStatusCode();
+                responseStringImage = await responseImage.Content.ReadAsStringAsync();
+            }
+            catch (HttpRequestException e)
+            {
+                throw new AIException($"Request for image generation failed with status code {responseImage?.StatusCode}", e);
+            }
+            string base64String;
+            try
+            {
+                ImageContent responseObjectImage = JsonSerializer.Deserialize<ImageContent>(responseStringImage) ?? throw new InvalidOperationException("Response object is null");
+                base64String = responseObjectImage.Images[0];
+                if (base64String.StartsWith("data:image/png;base64,"))
+                {
+                    base64String = base64String.Replace("data:image/png;base64,", string.Empty);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Image content is not a base64 string");
+                }
+            }
+            catch (JsonException e)
+            {
+                throw new AIException("Failed to deserialize response content", e);
+            }
+            string folderName, fileName;
+            try
+            {
+                var wwwRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                folderName = "images";
+                var directoryPath = Path.Combine(wwwRootPath, folderName);
+                if (!Directory.Exists(directoryPath))
+                {
+                    Directory.CreateDirectory(directoryPath);
+                }
+                fileName = $"{Guid.NewGuid()}.png";
+                var filePath = Path.Combine(directoryPath, fileName);
+                byte[] imageBytes = Convert.FromBase64String(base64String);
+                using (var ms = new MemoryStream(imageBytes))
+                {
+                    using var skImage = SKImage.FromEncodedData(ms);
+                    using var skData = skImage.Encode(SKEncodedImageFormat.Png, 100);
+                    using var fileStream = File.OpenWrite(filePath);
+                    skData.SaveTo(fileStream);
+                }
+            }
+            catch (Exception e)
+            {
+                throw new AIException("Failed to save image", e);
+            }
+
+            return Path.Combine("/", folderName, fileName).Replace("\\", "/");
+
+
+    }
 
         // --------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -542,7 +628,7 @@ namespace sustAInableEducation_backend.Repository
             }
         }
 
-        // Benjamin Edlinger
+        // Benjamin Edlinger ---------------------------------------------Darauf kann man schauen------------------------------------------------------------
         /// <summary>
         /// Generates an image based on the given story object
         /// </summary>
@@ -992,6 +1078,39 @@ public class Questions
 
 
 }
+
+    public enum ImageStyles
+    {
+        public const string Cartoon = "Cartoon",
+        public const string PopArt = "Pop-Art",
+        public const string PixelArt = "PixelArt";
+
+        public const string FantasyArt = "FantasyArt";
+
+         public const string Stencil = "Stencil";
+
+         public const string Papercraft = "Papercraft";
+
+         public const string Risograph = "Risograph";
+
+         public const string Cyberpunk = "Cyberpunk";
+
+
+         public const string PencilSketch = "PencilSketch";
+
+         public const string PaperCollage = "PaperCollage";
+
+        public const string Psydelic = "Psydelic";
+
+        public const string StreetArt = "StreetArt";
+
+        public const string Ukiyo = "Ukiyo-e";
+
+        public const string Manga = "Manga";
+
+        public const string Medieval = "Medieval";
+
+    }
 
 public class Choices
 {
