@@ -1,4 +1,6 @@
-﻿using System.Globalization;
+﻿
+using System.Runtime.Serialization;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -316,14 +318,19 @@ namespace sustAInableEducation_backend.Repository
 /// </summary>
 /// <param name="userName"></param> --------------------------------------------------------------------------------------------------------
 /// <returns></returns>
-    public async Task<string> GenerateProfileImage(String userName){
+    public async Task<string> GenerateProfileImage(String userName, string style){
             ArgumentNullException.ThrowIfNull(_client);
             ArgumentNullException.ThrowIfNull(userName);
                
-            
+            ImageStyles eStyle;
+               try {
+                     eStyle = (ImageStyles)Enum.Parse(typeof(ImageStyles), style);
+               }catch(System.ArgumentException E ) {
+                eStyle = ImageStyles.Cartoon;
+               }
 
-            String imagePrompt = $"Generate an image related to sustainability that matches the term '{userName}'. The Style of the image should match the ";
-            read volumes 
+
+            String imagePrompt = $"Generate an image related to sustainability that matches the term '{userName}'. The Style of the image should match the {eStyle} style";
 
 
             HttpRequestMessage requestImage = new(HttpMethod.Post, "/v1/inference/black-forest-labs/FLUX-1-dev")
@@ -1079,38 +1086,53 @@ public class Questions
 
 }
 
-    public enum ImageStyles
-    {
-        public const string Cartoon = "Cartoon",
-        public const string PopArt = "Pop-Art",
-        public const string PixelArt = "PixelArt";
+public enum ImageStyles
+{
+    [EnumMember(Value = "Cartoon")]
+    Cartoon,
 
-        public const string FantasyArt = "FantasyArt";
+    [EnumMember(Value = "Pop-Art")]
+    PopArt,
 
-         public const string Stencil = "Stencil";
+    [EnumMember(Value = "PixelArt")]
+    PixelArt,
 
-         public const string Papercraft = "Papercraft";
+    [EnumMember(Value = "FantasyArt")]
+    FantasyArt,
 
-         public const string Risograph = "Risograph";
+    [EnumMember(Value = "Stencil")]
+    Stencil,
 
-         public const string Cyberpunk = "Cyberpunk";
+    [EnumMember(Value = "Papercraft")]
+    Papercraft,
 
+    [EnumMember(Value = "Risograph")]
+    Risograph,
 
-         public const string PencilSketch = "PencilSketch";
+    [EnumMember(Value = "Cyberpunk")]
+    Cyberpunk,
 
-         public const string PaperCollage = "PaperCollage";
+    [EnumMember(Value = "PencilSketch")]
+    PencilSketch,
 
-        public const string Psydelic = "Psydelic";
+    [EnumMember(Value = "PaperCollage")]
+    PaperCollage,
 
-        public const string StreetArt = "StreetArt";
+    [EnumMember(Value = "Psychedelic")] 
+    Psychedelic,
 
-        public const string Ukiyo = "Ukiyo-e";
+    [EnumMember(Value = "StreetArt")]
+    StreetArt,
 
-        public const string Manga = "Manga";
+    [EnumMember(Value = "Ukiyo-e")]  
+    UkiyoE,
 
-        public const string Medieval = "Medieval";
+    [EnumMember(Value = "Manga")]
+    Manga,
 
-    }
+    [EnumMember(Value = "Medieval")]
+    Medieval
+}
 
 public class Choices
 {

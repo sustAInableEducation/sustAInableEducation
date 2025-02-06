@@ -9,6 +9,6 @@ namespace sustAInableEducation_backend.Repository
         Task<string> GenerateStoryImage(Story story);
         Task<StoryResult> GenerateResult(Story story);
         Task<Quiz> GenerateQuiz(Story story, QuizRequest config);
-        Task<string> GenerateProfileImage(string userName);
+        Task<string> GenerateProfileImage(string userName, string style);
     }
 }
