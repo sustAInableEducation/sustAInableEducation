@@ -318,19 +318,12 @@ namespace sustAInableEducation_backend.Repository
 /// </summary>
 /// <param name="userName"></param> --------------------------------------------------------------------------------------------------------
 /// <returns></returns>
-    public async Task<string> GenerateProfileImage(String userName, string style){
+    public async Task<string> GenerateProfileImage(String userName, ImageStyle style){
             ArgumentNullException.ThrowIfNull(_client);
             ArgumentNullException.ThrowIfNull(userName);
-               
-            ImageStyles eStyle;
-               try {
-                     eStyle = (ImageStyles)Enum.Parse(typeof(ImageStyles), style);
-               }catch(System.ArgumentException E ) {
-                eStyle = ImageStyles.Cartoon;
-               }
 
 
-            String imagePrompt = $"Generate an image related to sustainability that matches the term '{userName}'. The Style of the image should match the {eStyle} style";
+            String imagePrompt = $"Generate an image related to sustainability that matches the term '{userName}'. The Style of the image should match the {style} style";
 
 
             HttpRequestMessage requestImage = new(HttpMethod.Post, "/v1/inference/black-forest-labs/FLUX-1-dev")
@@ -1080,58 +1073,6 @@ public class Questions
 
     [JsonPropertyName("Choices")]
     public List<Choices> Choices { get; set; } = null!;
-
-   
-
-
-}
-
-public enum ImageStyles
-{
-    [EnumMember(Value = "Cartoon")]
-    Cartoon,
-
-    [EnumMember(Value = "Pop-Art")]
-    PopArt,
-
-    [EnumMember(Value = "PixelArt")]
-    PixelArt,
-
-    [EnumMember(Value = "FantasyArt")]
-    FantasyArt,
-
-    [EnumMember(Value = "Stencil")]
-    Stencil,
-
-    [EnumMember(Value = "Papercraft")]
-    Papercraft,
-
-    [EnumMember(Value = "Risograph")]
-    Risograph,
-
-    [EnumMember(Value = "Cyberpunk")]
-    Cyberpunk,
-
-    [EnumMember(Value = "PencilSketch")]
-    PencilSketch,
-
-    [EnumMember(Value = "PaperCollage")]
-    PaperCollage,
-
-    [EnumMember(Value = "Psychedelic")] 
-    Psychedelic,
-
-    [EnumMember(Value = "StreetArt")]
-    StreetArt,
-
-    [EnumMember(Value = "Ukiyo-e")]  
-    UkiyoE,
-
-    [EnumMember(Value = "Manga")]
-    Manga,
-
-    [EnumMember(Value = "Medieval")]
-    Medieval
 }
 
 public class Choices

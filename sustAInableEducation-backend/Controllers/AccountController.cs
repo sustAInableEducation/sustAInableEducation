@@ -18,17 +18,27 @@ namespace sustAInableEducation_backend.Controllers
         private readonly ApplicationDbContext _context;
         private readonly string _userId;
         private readonly ApplicationUser _user;
+        private readonly IAIService _ai;
 
-        public AccountController(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor)
+        public AccountController(ApplicationDbContext context, IHttpContextAccessor httpContextAccessor, IAIService ai)
         {
             _context = context;
             _userId = httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
             _user = _context.Users.Find(_userId)!;
+            _ai = ai;
         }
 
         [HttpGet]
         public ActionResult<ApplicationUser> GetAccount()
         {
+            return _user;
+        }
+
+        [HttpPost("profileImage")]
+        public async Task<ApplicationUser> SignUp(ImageStyle style)
+        {
+            _user.ProfileImage = await _ai.GenerateProfileImage(_user.AnonUserName, style).ConfigureAwait(false);
+            _context.SaveChanges();
             return _user;
         }
 

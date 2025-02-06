@@ -107,7 +107,6 @@ namespace sustAInableEducation_backend.Hubs
                     var storyStart = await _ai.StartStory(story);
                     story.Parts.Add(storyStart.Item1);
                     story.Title = storyStart.Item2;
-                    await _ai.GenerateProfileImage("TransparentLandfill1334");
                 }
                 else if (story.IsComplete)
                 {
