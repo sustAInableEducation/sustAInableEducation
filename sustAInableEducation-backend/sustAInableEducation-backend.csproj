@@ -10,7 +10,6 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.13.2" />
-    <PackageReference Include="CoreAdmin" Version="3.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.8" />
@@ -20,8 +19,13 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageReference Include="Serilog.Enrichers.Process" Version="3.0.0" />
+    <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
     <PackageReference Include="SignalRSwaggerGen" Version="4.7.0" />
     <PackageReference Include="SkiaSharp" Version="3.116.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.116.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.7.0" />
     <PackageReference Include="System.Text.Json" Version="9.0.1" />
   </ItemGroup>

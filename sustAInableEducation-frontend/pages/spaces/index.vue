@@ -1,10 +1,10 @@
 <template>
     <div class="w-full h-full">
-        <div class="w-screen flex items-center h-full bg-slate-50">
+        <div class="w-screen flex items-center h-full bg-slate-50 relative">
             <Toast />
             <ConfirmDialog></ConfirmDialog>
-            <div class="w-80 h-full pt-16 border-solid border-slate-300 border-r-2">
-                <div class="sidebar w-full h-full flex flex-col p-2 overflow-y-scroll">
+            <div class="sidebar-container w-80 h-full pt-16 border-solid border-slate-300 border-r-2 hidden sm:block">
+                <div class="sidebar w-full h-full flex-col p-2 overflow-y-scroll flex">
                     <div id="sidebar-header">
                         <div class="flex items-center">
                             <IconField class="mr-2">
@@ -67,6 +67,7 @@
                     </div>
                     <div id="sidebar-content">
                         <EcoSpaceListEntry v-for="ecoSpace in searchedSpaces" :ecoSpace="ecoSpace"
+                            :show-delete="myUserId === ecoSpace.participants.find(participant => participant.isHost)?.userId"
                             v-on:delete="openDialog" v-model="spaceRefsById[ecoSpace.id].value"
                             v-on:click="selectSpaceById(ecoSpace.id)" />
                         <NuxtLink to="/configuration">
@@ -84,6 +85,12 @@
                     </div>
                 </div>
             </div>
+
+            <MobileSidebar class="sm:hidden" v-model="showSidebar" :searched-spaces="searchedSpaces" :search-input="searchInput" :show-filters="showFilters" :filters="filters"
+                :is-filter-applied="isFilterApplied" :spaces="spaces" :selected-space="selectedSpace" @toggle-filters="toggleShowFilters" :space-refs-by-id="spaceRefsById"
+                @apply-filters="applyFilters" @reset-filters="resetFilters" @open-delete-dialog="openDialog" @select-space="selectSpaceCloseSidebar" @toggle-sidebar="showSidebar = !showSidebar"
+                @search-update="updateSearch" />
+
             <div class="content flex-1 h-full overflow-y-scroll">
                 <div v-if="selectedSpace" class="w-full pt-20 p-4">
                     <div class="flex items-start flex-col w-full h-full">
@@ -96,12 +103,8 @@
                             </template>
                             <span class="text-md">
                                 Dieser EcoSpace wurde noch nicht beendet. Wenn Sie diesen EcoSpace fortsetzen wollen,
-                                können Sie <Button variant="link" class="!p-0">
-                                    <template #default>
-                                        <span
-                                            class="text-blue-700 hover:text-blue-500 hover:underline font-bold">hier</span>
-                                    </template>
-                                </Button>
+                                können Sie
+                                <NuxtLink class="text-blue-700 hover:text-blue-500 hover:underline font-bold" :to="'/spaces/' + selectedSpace.id">hier</NuxtLink>
                                 klicken um diesem beizutreten.
                             </span>
                         </Message>
@@ -119,8 +122,12 @@
                                             {{ selectedSpace.story.length }}
                                         </p>
                                         <p class="mb-2">
+                                            <span class="font-bold">Abstimmungszeit:</span>
+                                            {{ selectedSpace.votingTimeSeconds + ' Sekunden' }}
+                                        </p>
+                                        <p class="mb-2">
                                             <span class="font-bold">Zielgruppe:</span>
-                                            TODO
+                                            {{ getTargetgroup(selectedSpace.story.targetGroup) }}
                                         </p>
                                     </div>
                                     <div class="w-full">
@@ -140,7 +147,7 @@
                                 <Fieldset legend="Teilnehmer" class="max-h-64 overflow-scroll">
                                     <div class="h-full w-full">
                                         <DataTable :value="selectedSpace.participants">
-                                            <Column field="userName" header="Username">
+                                            <Column field="userName" header="Benutzername">
                                                 <template #body="{ data }">
                                                     <div class="flex items-center">
                                                         <div class="size-5 mr-1">
@@ -149,11 +156,11 @@
                                                                 v-tooltip.bottom="{ value: 'Host', showDelay: 50 }"
                                                                 v-if="data.isHost" />
                                                         </div>
-                                                        <span>{{ data.userName }}</span>
+                                                        <span :class="data.userId === myUserId ? 'underline decoration-2 font-bold' : ''">{{ data.userName }}</span>
                                                     </div>
                                                 </template>
                                             </Column>
-                                            <Column field="impact" header="Impact">
+                                            <Column field="impact" header="Einfluss">
                                                 <template #body="{ data }">
                                                     <div class="flex items-center justify-center">
                                                         <span v-if="ecoSpaceIsFinished(selectedSpace)">{{ data.impact
@@ -220,11 +227,16 @@
 import type { EcoSpace } from '~/types/EcoSpace';
 import type { OverviewFilter } from '~/types/filter';
 
+useHead({
+    title: 'EcoSpace Übersicht - sustAInableEducation'
+})
+
 const runtimeConfig = useRuntimeConfig();
 const confirmDialog = useConfirm();
 const toast = useToast();
 
 const route = useRoute();
+const router = useRouter();
 
 
 const { execute, data: spaces } = await useFetch<EcoSpace[]>(`${runtimeConfig.public.apiUrl}/spaces`,
@@ -243,6 +255,8 @@ const { execute, data: spaces } = await useFetch<EcoSpace[]>(`${runtimeConfig.pu
 
 
 const showFilters = ref(false);
+
+const showSidebar = ref(true);
 
 const filters: OverviewFilter = {
     applied: {
@@ -275,6 +289,10 @@ const filters: OverviewFilter = {
         ]
     }
 };
+
+const myUserId = ref('')
+
+await getUser()
 
 const spaceRefsById = spaces.value ? spaces.value.reduce((acc, space) => {
     acc[space.id] = ref(false);
@@ -382,6 +400,11 @@ async function selectSpaceById(id: string) {
     });
 }
 
+async function selectSpaceCloseSidebar(id: string) {
+    await selectSpaceById(id);
+    showSidebar.value = false;
+}
+
 function formatDate(dateString: string) {
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, '0');
@@ -405,6 +428,10 @@ function getProgressLabel() {
         return `${selectedSpace.value!.story.parts.length} von ${selectedSpace.value!.story.length} Entscheidungspunkten wurden abgeschlossen`;
     }
     return `Alle ${selectedSpace.value!.story.length} Entscheidungspunkten wurden abgeschlossen`;
+}
+
+function updateSearch(newVal: string) {
+    searchInput.value = newVal;
 }
 
 function toggleShowFilters() {
@@ -469,6 +496,31 @@ const openDialog = (id: string) => {
         reject: () => {
 
         }
+    });
+}
+
+function getTargetgroup(targetGroup: number) {
+    switch (targetGroup) {
+        case 0:
+            return 'Volksschule';
+        case 1:
+            return 'Sekundarstufe I';
+        default:
+            return 'Sekundarstufe II';
+    }
+}
+
+function getUser() {
+    $fetch(`${runtimeConfig.public.apiUrl}/account`, {
+        method: 'GET',
+        credentials: 'include',
+        onResponse: (response) => {
+            if (response.response.ok) {
+                myUserId.value = response.response._data.id;
+            } else if (response.response.status === 401) {
+                router.push('/login?redirect=' + route.fullPath);
+            }
+        } 
     });
 }
 </script>

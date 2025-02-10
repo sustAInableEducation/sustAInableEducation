@@ -5,11 +5,9 @@
             <Toast />
             <div
                 class="bg-slate-50 shadow-xl flex justify-between flex-col rounded-xl items-center p-8 w-full max-w-md mx-4">
-                <h1 class="text-3xl font-bold mb-4">Login</h1>
+                <h1 class="text-3xl font-bold mb-4">Registrierung</h1>
                 <Form v-slot="$form" :initialValues :resolver @submit="onFormSubmit"
                     class="flex flex-col gap-4 !w-full sm:w-56">
-                    {{ $form.valid }}
-
                     <div>
                         <FloatLabel variant="in" class="flex flex-col">
                             <InputText v-model="formRefs.email.value" name="email" type="email" fluid />
@@ -20,7 +18,8 @@
                     </div>
                     <div>
                         <FloatLabel variant="in" class="flex flex-col">
-                            <InputText v-model="formRefs.password.value" name="password" type="password" fluid />
+                            <Password toggleMask :feedback="false" v-model="formRefs.password.value" name="password"
+                                type="password" fluid />
                             <label for="password">Passwort</label>
                         </FloatLabel>
                         <Message v-if="$form.password?.invalid" severity="error" size="small" class="mt-2">
@@ -29,20 +28,17 @@
                     </div>
                     <div>
                         <FloatLabel variant="in" class="flex flex-col">
-                            <InputText name="confirmPassword" type="password" fluid />
+                            <Password toggleMask :feedback="false" name="confirmPassword" type="password" fluid />
                             <label for="confirmPassword">Passwort Bestätigen</label>
                         </FloatLabel>
                         <Message v-if="$form.confirmPassword?.invalid" severity="error" size="small" class="mt-2">{{
                             $form.confirmPassword.error?.message }}</Message>
                     </div>
-                    <div class="flex items-center ml-1">
-                        <Checkbox name="saveLogin" v-model="saveLogin" value="saveLogin" inputId="saveLogin" />
-                        <label for="saveLogin" class="ml-2 cursor-pointer">Eingeloggt bleiben</label>
-                    </div>
-                    <Button type="submit" label="Registrieren" />
+                    <Button type="submit" label="Registrieren" :loading="loading" />
                 </Form>
                 <p class="mt-4">oder</p>
-                <NuxtLink :to="redirection ? '/login?redirect=' + redirection : 'login'" class="text-white mx-4 text-xl">
+                <NuxtLink :to="redirection ? '/login?redirect=' + redirection : 'login'"
+                    class="text-white mx-4 text-xl">
                     <Button variant="link" label="Anmelden" text />
                 </NuxtLink>
             </div>
@@ -53,11 +49,20 @@
 <script setup lang="ts">
 import type { Register, RegisterError } from '~/types/register'
 
+useHead({
+    title: 'Registrierung - sustAInableEducation'
+})
+
 const runtimeConfig = useRuntimeConfig();
 
 const route = useRoute();
+const router = useRouter();
 
 const redirection = route.query.redirect as string | undefined;
+
+const cookieHeaders = useRequestHeaders(['cookie']);
+
+await isLoggedInRequest();
 
 const toast = useToast();
 
@@ -66,13 +71,13 @@ const formRefs = {
     password: ref<string>('')
 }
 
+const loading = ref(false)
+
 const initialValues = reactive({
     email: '',
     password: '',
     confirmPassword: ''
 });
-
-const saveLogin = ref(false)
 
 const resolver = ({ values }: { values: Register }) => {
     const errors: RegisterError = {
@@ -139,6 +144,7 @@ const onFormSubmit = ({ valid }: { valid: boolean }) => {
 }
 
 async function register() {
+    loading.value = true;
     await $fetch(`${runtimeConfig.public.apiUrl}/account/register`, {
         method: 'POST',
         body: JSON.stringify({
@@ -156,6 +162,7 @@ async function register() {
         },
         onRequestError: (error) => {
             toast.add({ severity: 'error', summary: `Fehler: ${error.response?.status}`, detail: 'Bei der Registrierung ist ein Fehler aufgetreten.' });
+            loading.value = false;
         }
     })
 }
@@ -178,6 +185,21 @@ function includesUppercase(str: string) {
 function includesLowercase(str: string) {
     let RegEx = /[a-zäöü]/;
     return !RegEx.test(str);
+}
+
+async function isLoggedInRequest() {
+    try {
+        await $fetch(`${runtimeConfig.public.apiUrl}/account`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: cookieHeaders,
+            onResponse: (response) => {
+                if (response.response.status === 200) {
+                    router.push('/');
+                }
+            }
+        })
+    } catch (e) { }
 }
 
 </script>

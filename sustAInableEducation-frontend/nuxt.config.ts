@@ -52,16 +52,18 @@ export default defineNuxtConfig({
     }
   },
   routeRules: {
-    '/ecospaces/*': { ssr: false }
+    '/spaces/*': { ssr: false }
   },
   modules: [
     '@primevue/nuxt-module',
     '@nuxtjs/google-fonts',
     '@nuxtjs/google-fonts',
     '@nuxt/icon',
+    '@nuxt/image'
   ],
   icon: {
     provider: 'server',
+    localApiEndpoint: '/_nuxt_icon'
   },
   primevue: {
     options: {

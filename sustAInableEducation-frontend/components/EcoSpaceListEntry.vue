@@ -1,8 +1,8 @@
 <template>
-    <div class="w-full mb-2 p-2 rounded-md cursor-pointer" :class="model ? 'bg-slate-300' : 'bg-slate-200'" @click="clickEvent">
+    <div class=" mb-2 p-2 rounded-md cursor-pointer" :class="model ? 'bg-slate-300' : 'bg-slate-200'" @click="clickEvent">
         <div class="flex justify-between items-center">
             <span>{{ displayTitle() }}</span>
-            <Button variant="text" class="!rounded-full aspect-square !p-1" @click="toggleMenu">
+            <Button v-if="showDelete" variant="text" class="!rounded-full aspect-square !p-1" @click="toggleMenu">
                 <Icon name="ic:baseline-more-vert" class="aspect-square size-6 bg-black" />
             </Button>
             <Menu ref="menu" :model="menuItems" :popup="true" class="!rounded-md">
@@ -29,7 +29,7 @@ const model = defineModel<boolean>();
 
 const emit = defineEmits(['click', 'delete']);
 
-const props = defineProps<{ ecoSpace: EcoSpace }>();
+const props = defineProps<{ ecoSpace: EcoSpace, showDelete: boolean }>();
 
 const menu = ref();
 

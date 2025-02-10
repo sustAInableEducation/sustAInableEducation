@@ -1,7 +1,7 @@
 <template>
-    <div class="w-full h-full prose-lg">
+    <div class="w-full h-[100dvh] prose-lg flex">
         <div class="background animate-anim" />
-        <div class="w-screen flex flex-col items-center h-full bg-slate-50 pt-[4.5rem] p-4">
+        <div class="w-screen flex-1 flex flex-col items-center h-full bg-slate-50 pt-[4.5rem] p-4 overflow-hidden">
             <InviteDialog v-model="inviteDialogIsVisible" :joinCode="joinCode" :expirationDate="joinExpirationDate"
                 v-on:generateCode="getJoinCode" />
             <UserDialog v-model="userDialogIsVisible" :participants="space!.participants" :my-user-id="myUserId" />
@@ -12,34 +12,47 @@
                         <Icon name="ic:baseline-person-add" class="size-5" />
                     </template>
                 </Button>
-                <div v-if="isVoting" class="font-bold text-xl absolute w-full flex justify-start sm:justify-center items-center">
+                <div v-if="isVoting"
+                    class="font-bold text-xl absolute w-full flex justify-start sm:justify-center items-center">
                     Abstimmungszeit</div>
                 <Button label="Teilnehmer" :badge="space?.participants.length.toString()" @click="showUserDialog" />
             </div>
             <div
-                class="panel w-full flex-1 rounded-xl relative border-solid border-slate-300 pb-72 sm:pb-0 border-2 flex flex-col justify-start">
+                class="panel w-full flex-1 min-h-0 rounded-xl relative border-solid border-slate-300 sm:pb-0 border-2 flex flex-col justify-start">
                 <div class="hostcontrols w-full flex justify-end absolute top-0 right-0 mr-8 mt-4"
                     v-if="role === 'host'">
-                    <div class="bg-white z-10">
+                    <div class="bg-white z-10 rounded-md">
                         <Button label="Abstimmung starten" @click="startVoting" size="small"
                             :disabled="disableStartVoteButton" />
                     </div>
                 </div>
-                <div class="content h-[32rem] mt-4 mx-4 overflow-y-scroll overflow-x-hidden" ref="contentDiv">
-
+                <div class="content h-full mt-4 mx-4 overflow-y-scroll overflow-x-hidden" ref="contentDiv">
                     <div v-for="part, index in space?.story.parts" class="px-4 pb-4 pt-0" ref="partsRef">
-                        
+
                         <h2 class="font-bold mb-2" :ref="index === space!.story.parts.length - 1 ? 'lastPart' : ''">{{
                             `${index + 1}:
                             ${part.intertitle}` }}</h2>
                         <p class="mb-4">{{ part.text }}</p>
-                        <ul class="list-disc">
-                            <li v-for="choice in part.choices"
-                                :class="{ 'font-bold bg-primary-200 rounded-lg p-1': choice.number === part.chosenNumber }">
-                                <span>{{ `${choice.number}: ${choice.text}` }}</span>
-                            </li>
-                        </ul>
-                        <Divider v-if="index !== space!.story.parts.length-1 || isLoading" />
+                        <div class="flex flex-col">
+                            <Chip v-for="choice, choiceIndex in part.choices" class="mb-2"
+                                :class="part.chosenNumber === choice.number ? '!bg-primary-300' : '!bg-primary-100'">
+
+                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center sm:w-full">
+                                    <div class="w-full flex justify-end sm:hidden" v-if="part.chosenNumber">
+                                        <Badge :value="getPercentages(part)[choiceIndex] + '%'" />
+                                    </div>
+                                    <span>{{ `${choice.number}: ${choice.text}` }}</span>
+                                    <Badge class="!hidden sm:!block" :value="getPercentages(part)[choiceIndex] + '%'"
+                                        v-if="part.chosenNumber" />
+                                </div>
+
+                            </Chip>
+                        </div>
+
+                        <NuxtImg :src="runtime.public.apiUrl + '/' + part.image" class="w-full mt-4 rounded-xl"
+                            v-if="part.image" />
+                        <Skeleton width="100%" height="5rem" class="!h-[5rem] " v-else />
+                        <Divider v-if="index !== space!.story.parts.length - 1 || isLoading" />
                     </div>
                     <div class="w-full h-full flex justify-center items-center" v-if="parts.length === 0 && !isLoading">
                         <Button label="Start" @click="generatePart" severity="primary" v-if="role === 'host'" />
@@ -118,50 +131,65 @@
                         </Button>
                     </div>
                 </div>
-                <div class="controls absolute w-full bottom-0 bg-slate-50 p-4 rounded-bl-xl rounded-br-xl flex flex-col" v-if="role === 'host'">
-                    <Divider />
-                    <div class="timer">
-                        <Timer class="sm:hidden" v-model="timerValue" />
+                <div ref="hostControls"
+                    class="controls w-full bottom-0 bg-slate-50 p-4 rounded-bl-xl rounded-br-xl flex flex-col z-10"
+                    v-if="role === 'host'">
+                    <div class="flex items-center">
+                        <Divider />
+                        <Icon :name="!hideControls ? 'ic:twotone-keyboard-arrow-down' : 'ic:twotone-keyboard-arrow-up'" class="size-10 bg-gray-400 cursor-pointer" @click="hideControls = !hideControls"/>
                     </div>
-                    <div class="flex flex-col sm:flex-row sm:justify-between w-full">
-                        <div class="w-full mb-2 sm:mb-0 sm:mx-5 flex-1">
-                            <HostButton label="Option 1" :disabled="disableOptionButtons" :percentage="percentages[0]"
-                                @click="selectOption(1)" :voting="showPercentages" />
+                    <div v-if="!hideControls">
+                        <div class="timer">
+                            <Timer class="sm:hidden" v-model="timerValue" />
                         </div>
-                        <div class="w-full mb-2 sm:mb-0 sm:mx-5 flex-1">
-                            <HostButton label="Option 2" :disabled="disableOptionButtons" :percentage="percentages[1]"
-                                @click="selectOption(2)" :voting="showPercentages" />
-                        </div>
-                        <Knob class="hidden sm:block mx-5" v-model="timerValue.percent"
-                            :valueTemplate="(number) => { return `${timerValue.time}` }" disabled :size="100">
-                        </Knob>
-                        <div class="w-full mb-2 sm:mb-0 sm:mx-5 flex-1">
-                            <HostButton label="Option 3" :disabled="disableOptionButtons" :percentage="percentages[2]"
-                                @click="selectOption(3)" :voting="showPercentages" />
-                        </div>
-                        <div class="w-full mb-2 sm:mb-0 sm:mx-5 flex-1">
-                            <HostButton label="Option 4" :disabled="disableOptionButtons" :percentage="percentages[3]"
-                                @click="selectOption(4)" :voting="showPercentages" />
+                        <div class="flex flex-col sm:flex-row sm:justify-between w-full">
+                            <div class="w-full mb-2 sm:mb-0 sm:mx-5 flex-1">
+                                <HostButton label="Option 1" :disabled="disableOptionButtons"
+                                    :percentage="percentages[0]" @click="selectOption(1)" :voting="showPercentages" />
+                            </div>
+                            <div class="w-full mb-2 sm:mb-0 sm:mx-5 flex-1">
+                                <HostButton label="Option 2" :disabled="disableOptionButtons"
+                                    :percentage="percentages[1]" @click="selectOption(2)" :voting="showPercentages" />
+                            </div>
+                            <Knob class="hidden sm:block mx-5" v-model="timerValue.percent"
+                                :valueTemplate="(number) => { return `${timerValue.time}` }" disabled :size="100">
+                            </Knob>
+                            <div class="w-full mb-2 sm:mb-0 sm:mx-5 flex-1">
+                                <HostButton label="Option 3" :disabled="disableOptionButtons"
+                                    :percentage="percentages[2]" @click="selectOption(3)" :voting="showPercentages" />
+                            </div>
+                            <div class="w-full mb-2 sm:mb-0 sm:mx-5 flex-1">
+                                <HostButton label="Option 4" :disabled="disableOptionButtons"
+                                    :percentage="percentages[3]" @click="selectOption(4)" :voting="showPercentages" />
+                            </div>
                         </div>
                     </div>
+
                 </div>
-                <div class="controls absolute w-full bottom-0 bg-slate-50 flex flex-col p-4 rounded-bl-xl rounded-br-xl text-xl" v-else>
-                    <Divider />
-                    <div class="timer">
-                        <Timer class="sm:hidden" v-model="timerValue" />
+                <div ref="userControls"
+                    class="controls absolute w-full bottom-0 bg-slate-50 flex flex-col p-4 rounded-bl-xl rounded-br-xl text-xl z-10"
+                    v-else>
+                    <div class="flex items-center">
+                        <Divider />
+                        <Icon :name="!hideControls ? 'ic:twotone-keyboard-arrow-down' : 'ic:twotone-keyboard-arrow-up'" class="size-10 bg-gray-400 cursor-pointer" @click="hideControls = !hideControls"/>
                     </div>
-                    <div class="flex flex-col sm:flex-row sm:justify-between w-full">
-                        <Button class="mb-2 sm:mb-0 sm:mr-5 flex-1 sm:!text-2xl" label="Option 1" @click="voteOption(1)"
-                            :disabled="disableOptionButtons" />
-                        <Button class="mb-2 sm:mb-0 sm:mr-5 flex-1 sm:!text-2xl" label="Option 2" @click="voteOption(2)"
-                            :disabled="disableOptionButtons" />
-                        <Knob class="hidden sm:block mx-5" v-model="timerValue.percent"
-                            :valueTemplate="(number) => { return `${timerValue.time}` }" disabled :size="100">
-                        </Knob>
-                        <Button class="mb-2 sm:mb-0 sm:mr-5 flex-1 sm:!text-2xl" label="Option 3" @click="voteOption(3)"
-                            :disabled="disableOptionButtons" />
-                        <Button class="mb-2 sm:mb-0 sm:mr-5 flex-1 sm:!text-2xl" label="Option 4" @click="voteOption(4)"
-                            :disabled="disableOptionButtons" />
+                    <div v-if="!hideControls">
+                        <div class="timer"> 
+                            <Timer class="sm:hidden" v-model="timerValue" />
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-between w-full">
+                            <Button class="mb-2 sm:mb-0 sm:mr-5 flex-1 sm:!text-2xl" label="Option 1" @click="voteOption(1)"
+                                :disabled="disableOptionButtons" />
+                            <Button class="mb-2 sm:mb-0 sm:mr-5 flex-1 sm:!text-2xl" label="Option 2" @click="voteOption(2)"
+                                :disabled="disableOptionButtons" />
+                            <Knob class="hidden sm:block mx-5" v-model="timerValue.percent"
+                                :valueTemplate="(number) => { return `${timerValue.time}` }" disabled :size="100">
+                            </Knob>
+                            <Button class="mb-2 sm:mb-0 sm:mr-5 flex-1 sm:!text-2xl" label="Option 3" @click="voteOption(3)"
+                                :disabled="disableOptionButtons" />
+                            <Button class="mb-2 sm:mb-0 sm:mr-5 flex-1 sm:!text-2xl" label="Option 4" @click="voteOption(4)"
+                                :disabled="disableOptionButtons" />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -180,12 +208,29 @@ const id = route.params.id
 
 const space = ref<EcoSpace | null>(null)
 
+const pageTitle = computed(() => {
+    return `${space.value?.story.title ? space.value?.story.title : 'Neuer EcoSpace'} - sustAInableEducation`
+})
+
 const hasVoted = ref(false)
 const isVoting = ref(false)
 const percentages = ref([0, 0, 0, 0])
 const showPercentages = ref(false)
 
 const myUserId = ref('')
+
+const hostControls = ref<HTMLDivElement | null>(null)
+const userControls = ref<HTMLDivElement | null>(null)
+
+const hideControls = ref(false)
+
+const controlHeight = computed(() => {
+    if (role.value === 'host' && hostControls.value) {
+        return hostControls.value.offsetHeight
+    } else if (userControls.value) {
+        return userControls.value.offsetHeight
+    }
+})
 
 await $fetch(`${runtime.public.apiUrl}/account`, {
     credentials: 'include',
@@ -207,7 +252,7 @@ const parts = computed(() => {
 
 const disableOptionButtons = computed(() => {
     if (role.value === 'host') {
-        return !!space.value?.story.result || isLoading.value || parts.value.length === 0 || isVoting.value
+        return !!space.value?.story.result || isLoading.value || parts.value.length === 0 || isVoting.value || imageLoading.value
     }
     return !isVoting.value || hasVoted.value
 })
@@ -219,7 +264,7 @@ const result = computed(() => {
 })
 
 const disableStartVoteButton = computed(() => {
-    return isVoting.value || parts.value.length === 0 || isLoading.value || !!parts.value[parts.value.length - 1].chosenNumber
+    return isVoting.value || parts.value.length === 0 || isLoading.value || !!parts.value[parts.value.length - 1].chosenNumber || imageLoading.value
 })
 
 const cookieHeaders = useRequestHeaders(['cookie'])
@@ -233,10 +278,22 @@ const loadingAnimation = ref<HTMLDivElement | null>(null);
 const enableStart = ref(true)
 
 const isLoading = ref(false)
+const imageLoading = ref(false)
 
 const showReloadButton = ref(false)
 
 await getSpace()
+
+useHead({
+    title: pageTitle 
+})
+
+if (parts.value.length > 0) {
+    if (parts.value[parts.value.length - 1].choices.some((choice) => choice.numberVotes > 0)) {
+        percentages.value = parts.value[parts.value.length - 1].choices.map((choice) => Math.round((choice.numberVotes / parts.value[parts.value.length - 1].choices.reduce((a, b) => a + b.numberVotes, 0)) * 100))
+        showPercentages.value = true
+    }
+}
 
 const connection = new HubConnectionBuilder()
     .withUrl(`${runtime.public.apiUrl}/spaceHub/${id}`, {
@@ -251,11 +308,13 @@ async function generatePart() {
     try {
         await connection.invoke("GeneratePart")
     } catch (err) {
+        console.log("ALARM GENERATE" + err)
         isLoading.value = false
         showReloadButton.value = true
     }
 
 }
+
 
 async function selectOption(number: Number) {
     if (space.value !== null) {
@@ -267,7 +326,7 @@ async function selectOption(number: Number) {
             try {
                 await connection.invoke("GeneratePart")
             } catch (err) {
-                console.error("ALARM")
+                console.error("ALARM SELECT" + err)
                 isLoading.value = false
                 showReloadButton.value = true
             }
@@ -301,6 +360,7 @@ connection.on("PartGenerating", async () => {
     }
     showPercentages.value = false
     isLoading.value = true
+    imageLoading.value = true
     await nextTick()
     scrollToAnimation()
 })
@@ -326,6 +386,11 @@ connection.on("VotingStarted", async (expirationStr: string) => {
     showPercentages.value = true
     percentages.value = [0, 0, 0, 0]
     startTimer(expirationStr)
+})
+
+connection.on("ImageGenerated", async (image: string) => {
+    parts.value[parts.value.length - 1].image = image
+    imageLoading.value = false
 })
 
 connection.on("ErrorOccured", (msg: string) => {
@@ -389,13 +454,20 @@ function startTimer(expirationStr: string) {
     let expirationDate = Date.parse(expirationStr)
 
     timerInterval = setInterval(function () {
-
+        /*
         let now = new Date().getTime()
         let distance = expirationDate - now
         timerValue.value.time = Math.floor(distance / 1000)
         timerValue.value.percent = Math.round((timerValue.value.time / timerValue.value.initialValue) * 100)
+        */
+
+        timerValue.value.time -= 1
+        timerValue.value.percent = Math.round((timerValue.value.time / timerValue.value.initialValue) * 100)
 
         if (timerValue.value.time <= 0) {
+            2
+            timerValue.value.time = 0
+            timerValue.value.percent = Math.round((timerValue.value.time / timerValue.value.initialValue) * 100)
             isVoting.value = false
             clearInterval(timerInterval)
         }
@@ -519,5 +591,10 @@ const scrollToResult = () => {
 
 function printLogs() {
     console.table(parts.value)
+}
+
+function getPercentages(part: Part) {
+    let sum = part.choices.reduce((a, b) => a + b.numberVotes, 0)
+    return part.choices.map((choice) => Math.round((choice.numberVotes / sum) * 100))
 }
 </script>

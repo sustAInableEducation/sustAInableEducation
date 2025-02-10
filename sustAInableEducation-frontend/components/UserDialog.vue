@@ -9,7 +9,7 @@
             </IconField>
             <Panel class="overflow-y-scroll h-96 w-full">
                 <DataTable :value="searchedParticipants">
-                    <Column field="userName" header="Name" class="w-8/12">
+                    <Column field="userName" header="Benutzername" class="w-8/12">
                         <template #body="{ data }">
                             <div class="flex items-center">
                                 <div class="size-5 mr-1">

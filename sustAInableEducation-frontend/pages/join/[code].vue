@@ -22,7 +22,7 @@ if (import.meta.client) {
     },
     onResponse: (response) => {
       if (response.response.ok) {
-        router.push(`/ecospaces/${response.response._data.id}`)
+        router.push(`/spaces/${response.response._data.id}`)
       } else if (response.response.status === 404) {
         router.push('/')
       } else if (response.response.status === 401) {

@@ -45,16 +45,6 @@ namespace sustAInableEducation_backend.Repository
             {
                 await _roleManager.CreateAsync(new IdentityRole("Admin"));
             }
-            if (!await _context.Users.AnyAsync(u => u.UserName == _config["AdminEmail"]))
-            {
-                var user = new ApplicationUser
-                {
-                    UserName = _config["AdminEmail"],
-                    Email = _config["AdminEmail"]
-                };
-                await _userManager.CreateAsync(user, _config["AdminPassword"]!);
-                await _userManager.AddToRoleAsync(user, "Admin");
-            }
         }
     }
 }

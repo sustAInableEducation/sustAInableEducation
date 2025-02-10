@@ -1,42 +1,11 @@
 services:
-  frontend:
-    build: ./hundert-morgen-wald-frontend
-    ports:
-      - 3000:3000
-    environment:
-      - VIRTUAL_HOST=app.sustainable-edu.at
-      - LETSENCRYPT_HOST=app.sustainable-edu.at
-      - VIRTUAL_PORT=3000
-    restart: always
-
-  backend:
-    build: ./sustAInableEducation-backend
-    ports:
-      - 8080:8080
-    environment:
-      - VIRTUAL_HOST=app.sustainable-edu.at
-      - LETSENCRYPT_HOST=app.sustainable-edu.at
-      - VIRTUAL_PORT=8080
-      - VIRTUAL_PATH=/api
-      - Db__Host=database
-      - Db__User=sa
-      - Db__Password=Schueler123!
-      - DeepInfra__Url=https://api.deepinfra.com
-      - DeepInfra__ApiKey=123
-      - FrontendHost=http://localhost:3000
-    restart: always
-    depends_on:
-      - database
-
-  nginx:
+  sus-nginx:
     image: nginx:latest
     networks:
       - web
-    ports:
-      - 1337:80
     depends_on:
-      - backend
-      - frontend
+      - sus-backend
+      - sus-frontend
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
     environment:
@@ -45,9 +14,41 @@ services:
       - VIRTUAL_PORT=80
     restart: always
 
-  database:
+  sus-frontend:
+    build: ./sustAInableEducation-frontend
+    networks:
+      - web
+    expose:
+      - 3000
+    restart: always
+    environment:
+      - NUXT_PUBLIC_API_URL=https://app.sustainable-edu.at/api
+      - HOST_PUBLIC_HOST_URL=https://app.sustainable-edu.at
+
+  sus-backend:
+    build: ./sustAInableEducation-backend
+    expose:
+      - 8080
+    networks:
+      - web
+    volumes:
+      - ./wwwroot:/app/wwwroot
+    environment:
+      - Db__Host=sus-db
+      - Db__User=sa
+      - Db__Password=Schueler123!
+      - DeepInfra__Url=https://api.deepinfra.com
+      - DeepInfra__ApiKey=123
+      - FrontendHost=https://app.sustainable-edu.at
+    restart: always
+    depends_on:
+      - sus-db
+
+  sus-db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     user: root
+    networks:
+      - web
     ports:
       - 1433:1433
     volumes:
@@ -63,3 +64,7 @@ volumes:
   mssql-data:
   mssql-log:
   mssql-secrets:
+
+networks:
+  web:
+    external: true

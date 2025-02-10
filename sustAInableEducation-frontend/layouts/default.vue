@@ -1,6 +1,6 @@
 <template>
     <div class="flex flex-col h-screen">
-        <header class="absolute z-10">
+        <header class="absolute z-20">
             <Header />
         </header>
         <main class="h-full">

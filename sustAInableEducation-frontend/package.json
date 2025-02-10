@@ -12,6 +12,7 @@
   "dependencies": {
     "@microsoft/signalr": "^8.0.7",
     "@nuxt/icon": "^1.9.0",
+    "@nuxt/image": "^1.9.0",
     "@nuxtjs/google-fonts": "^3.2.0",
     "@primevue/forms": "^4.2.5",
     "@primevue/themes": "^4.2.2",

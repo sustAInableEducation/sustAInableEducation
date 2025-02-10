@@ -50,7 +50,7 @@ namespace sustAInableEducation_backend.Hubs
             }
 
             await Groups.AddToGroupAsync(Context!.ConnectionId, _spaceId.ToString());
-            var participtant = _context.SpaceParticipant.Find(_spaceId, _userId)!;
+            var participtant = _context.SpaceParticipant.Include(p => p.User).FirstOrDefault(p => p.UserId == _userId && p.SpaceId == _spaceId)!;
             participtant.IsOnline = true;
             await _context.SaveChangesAsync();
 
@@ -131,6 +131,7 @@ namespace sustAInableEducation_backend.Hubs
                 if (space.IsImageGenerationEnabled)
                 {
                     story.Result!.Image = await _ai.GenerateStoryImage(story);
+                    await _context.SaveChangesAsync();
                     await SendMessage(MessageType.ImageGenerated, story.Result!.Image);
                 }
             }
@@ -140,6 +141,7 @@ namespace sustAInableEducation_backend.Hubs
                 if (space.IsImageGenerationEnabled)
                 {
                     story.Parts.Last().Image = await _ai.GenerateStoryImage(story);
+                    await _context.SaveChangesAsync();
                     await SendMessage(MessageType.ImageGenerated, story.Parts.Last().Image);
                 }
             }

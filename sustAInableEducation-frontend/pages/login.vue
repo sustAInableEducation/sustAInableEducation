@@ -18,7 +18,8 @@
                     </div>
                     <div>
                         <FloatLabel variant="in" class="flex flex-col">
-                            <InputText v-model="formRefs.password.value" name="password" type="password" fluid />
+                            <Password toggleMask :feedback="false" v-model="formRefs.password.value" name="password"
+                                type="password" fluid />
                             <label for="password">Passwort</label>
                         </FloatLabel>
                         <Message v-if="$form.password?.invalid" severity="error" size="small" class="mt-2">{{
@@ -29,10 +30,11 @@
                             inputId="saveLogin" />
                         <label for="saveLogin" class="ml-2 cursor-pointer">Eingeloggt bleiben</label>
                     </div>
-                    <Button type="submit" label="Login" />
+                    <Button type="submit" label="Anmelden" :loading="loading" />
                 </Form>
                 <p class="mt-4">oder</p>
-                <NuxtLink :to="redirection ? '/register?redirect=' + redirection : '/register'" class="text-white mx-4 text-xl">
+                <NuxtLink :to="redirection ? '/register?redirect=' + redirection : '/register'"
+                    class="text-white mx-4 text-xl">
                     <Button variant="link" label="Registrieren" text />
                 </NuxtLink>
             </div>
@@ -43,19 +45,30 @@
 <script setup lang="ts">
 import type { Login, LoginError } from '~/types/login'
 
+useHead({
+    title: 'Anmeldung - sustAInableEducation'
+})
+
 const runtimeConfig = useRuntimeConfig();
 
 const route = useRoute();
+const router = useRouter();
 
 const toast = useToast();
 
 const redirection = route.query.redirect as string | undefined;
+
+const cookieHeaders = useRequestHeaders(['cookie']);
+
+await isLoggedInRequest();
 
 const formRefs = {
     email: ref<string>(''),
     password: ref<string>(''),
     saveLogin: ref<boolean>(false)
 }
+
+const loading = ref(false)
 
 const initialValues = reactive({
     email: '',
@@ -69,11 +82,11 @@ const resolver = ({ values }: { values: Login }) => {
     };
 
     if (!values.email) {
-        errors.email = [{ message: 'Email is required.' }];
+        errors.email = [{ message: 'Bitte geben Sie eine E-Mail ein.' }];
     }
 
     if (!values.password) {
-        errors.password = [{ message: 'Password is required.' }];
+        errors.password = [{ message: 'Bitte geben Sie ein Passwort ein.' }];
     }
 
     return {
@@ -88,6 +101,7 @@ const onFormSubmit = ({ valid }: { valid: boolean }) => {
 };
 
 async function login() {
+    loading.value = true;
     let url = `${runtimeConfig.public.apiUrl}/account/login`;
     if (formRefs.saveLogin.value) {
         url += "?useCookies=true";
@@ -105,13 +119,29 @@ async function login() {
             credentials: 'include',
             onResponse: (response) => {
                 if (response.response.status === 200) {
-                    if(redirection) {
+                    if (redirection) {
                         navigateTo(redirection);
                     } else {
                         navigateTo('/');
                     }
                 } else {
+                    loading.value = false;
                     toast.add({ severity: 'error', summary: `Fehler: ${response.response.status}`, detail: 'Bei der Anmeldung ist ein Fehler aufgetreten.' });
+                }
+            }
+        })
+    } catch (e) { }
+}
+
+async function isLoggedInRequest() {
+    try {
+        await $fetch(`${runtimeConfig.public.apiUrl}/account`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: cookieHeaders,
+            onResponse: (response) => {
+                if (response.response.status === 200) {
+                    router.push('/');
                 }
             }
         })

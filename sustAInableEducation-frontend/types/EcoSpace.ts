@@ -18,7 +18,7 @@ export interface Part {
     votingEndAt: string,
     chosenNumber: number,
     choices: Array<Choice>,
-    
+    image: string
 }
 
 export interface Result {
@@ -37,6 +37,7 @@ export interface Story {
     temperature: number,
     topP: number,
     totalImpact: number,
+    targetGroup: number,
     parts: Array<Part>,
     result: Result | null,
 }

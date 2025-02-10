@@ -6,7 +6,7 @@
         </NuxtLink>
 
         <div class="flex justify-center items-center">
-            <NuxtLink to="/ecospaces" class="text-white mx-4 text-xl">EcoSpaces</NuxtLink>
+            <NuxtLink to="/spaces" class="text-white mx-4 text-xl">EcoSpaces</NuxtLink>
             <NuxtLink to="/quizzes" class="text-white mx-4 text-xl">Quizzes</NuxtLink>
             <div class="text-white mx-4 text-xl flex justify-center items-center" :class="!(['/login', '/register'].includes(route.path)) ? 'cursor-pointer' : ''" @click="toggleMenu">
                 <Icon name="ic:baseline-account-circle" class="bg-white mx-4 size-10" />
@@ -28,7 +28,7 @@ const items = ref([
         label: 'Sie sind eingeloggt',
         items: [
             {
-                label: 'Logout',
+                label: 'Abmelden',
                 command: () => logout()
             }
         ]
