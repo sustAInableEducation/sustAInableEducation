@@ -806,9 +806,6 @@ namespace sustAInableEducation_backend.Repository
         /// <exception cref="ArgumentNullException"></exception>
         private List<ChatMessage> RebuildChatMessagesQuiz(Story story, QuizRequest config, List<ChatMessage> chatMessages)
         {
-
-
-
             ArgumentNullException.ThrowIfNull(story);
 
             string targetGroupString = story.TargetGroup switch
@@ -818,8 +815,6 @@ namespace sustAInableEducation_backend.Repository
                 TargetGroup.HighSchool => "Die Teilnehmer, welche den Quiz  durchführen, sind Schüler der Sekundarstufe zwei im Alter von 15 bis 19 Jahren. Pass deinen Stil an diese Zielgruppe an und verwende eine anspruchsvollere Sprache mit komplexeren Satzstrukturen und Fachbegriffen.",
                 _ => throw new ArgumentException("Invalid target group")
             };
-            // Der Teil drüber soll zusätylich in den SystemPromt reinkommen
-
 
             try
             {
@@ -830,27 +825,27 @@ namespace sustAInableEducation_backend.Repository
                                        "Wichtig ist es das du den ganzen Quiz, das beduetet die Fragen und die Antorten in  einer Response ausgibst. " +
                                        $"Formatierungsrichtlinien: {targetGroupString} " +
                                       "{'Title': 'Der Titel des ganzen Quizes'," +
-                                      "'NumberQuestions': 'Anzahl an Questions'," + 
-                                       "'Questions': {'Text': 'Der Titel der jeweiligen Frage'," +
+                                      "'NumberQuestions': 'Anzahl an Questions', - als Integer nicht string" + 
+                                       "'Questions': [{'Text': 'Der Titel der jeweiligen Frage'," +
                                        //"'IsMultipleResponse': 'Besagt ob die Frage eine MultipleRespose Frage ist - bei ja wird True gesetzt bei nein False '" + 
-                                       "'Number': 'Die Nummer der Frage', "+
+                                       "'Number': 'Die Nummer der Frage' - als Integer nicht string, "+
                                        "'Choices': [{'Number': 'Die Nummer der Auswahlmöglichkeit'," +
                                        "'Text': 'Der Text zur jeweiligen Auswahlmöglichkeit', "+
-                                       "'IsCorrect': 'Ein Wahrheitswert, der angibt, ob die Auswahl korrekt ist'}]}} " +
-                                       $"Das Quiz soll aus ausschließlich aus." +
+                                       "'IsCorrect' - als Boolean nicht String : 'Ein Wahrheitswert, der angibt, ob die Auswahl korrekt ist'}]}]} " +
+                                       $"Das Quiz soll aus ausschließlich aus diesen Fragetypen entstehen." +
                                        string.Join(", ", config.Types.Select(t =>
                                        {
                                            return t switch
                                            {
-                                               QuizType.MultipleResponse => "Multiple Response - bedeutet, dass es mehrere Antwortmöglichkeiten gibt. Hierbei müssen meherere Richtig sein. überprüfe das von 2-4 Auswahlmöglichkeiten  mindestens 2 richtig",
-                                               QuizType.SingleResponse => "Single response - bedeutet,  dass es mehrere Antwortmöglichkeiten gibt. Hierbei ist muss nur eine der 4 Richtig sein ",
-                                               QuizType.TrueFalse => "True/False - bedeutet, dass es 2 Antwortmöglichkeiten gibt(Wahr und Falsch). Eines der beiden kann hierbei nur Richitg sein ",
-                                               _ => throw new ArgumentException("Invalid quiz type")
+                                                QuizType.MultipleResponse => "Multiple Response - bedeutet, dass es mehrere Antwortmöglichkeiten gibt. Hierbei müssen meherere Richtig sein. überprüfe das von 2-4 Auswahlmöglichkeiten  mindestens 2 richtig",
+                                                QuizType.SingleResponse => "Single response - bedeutet, dass es mehrere Antwortmöglichkeiten gibt. Hierbei ist muss nur eine der 4 Richtig sein ",
+                                                QuizType.TrueFalse => "True/False - bedeutet, dass es 2 Antwortmöglichkeiten gibt welche Wahr oder Falsch heißen. Eines der beiden darf hierbei nur Richtig sein. Formuliere hierbei die Frage so das sie mit Wahr oder Falsch beantwortet werden kann ",
+                                               _=> throw new ArgumentException("Invalid quiz type")
                                            };
                                        })) +
                                        $"Fragen bestehen und soll {config.NumberQuestions} Frage/n lang sein.";
                 ;
-                string userPrompt = $"Alle Fragen sollen zum Gebiet {story.Topic} passen. Generiere das Quiz auf Basis der durchlebten Story.";
+                string userPrompt = $"Alle Fragen sollen zum Gebiet {story.Topic} passen. Generiere das Quiz auf Basis der durchlebten Story, gehe dabei auf die Aspekte der Nachhaltigkeit, welche in der Geschichte besprochen werden passend zu  {story.Topic} anstatt auf die Geschichte an sich.";
 
                 chatMessages.Add(new ChatMessage { Role = ValidRoles.System, Content = systemPrompt });
                 chatMessages.Add(new ChatMessage { Role = ValidRoles.User, Content = userPrompt });
@@ -862,7 +857,7 @@ namespace sustAInableEducation_backend.Repository
             {
                 throw new AIException("Failed to generate Quiz", e);
             }
-            
+            _logger.LogDebug(chatMessages.ToString());
             return chatMessages;
         }
 
@@ -1004,7 +999,7 @@ namespace sustAInableEducation_backend.Repository
                 {
                     Number = question.Number,
                     Text = question.Text,
-                    IsMultipleResponse = question.Choices.Where(c => c.IsCorrect).Count() > 1,
+                    IsMultipleResponse = true,
 
                     Choices = question.Choices.Select((choice, index) => new QuizChoice
                     {
